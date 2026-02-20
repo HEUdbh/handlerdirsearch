@@ -7,3 +7,5 @@ export function Greet(arg1:string):Promise<string>;
 export function RunScan(arg1:main.ScanRequest):Promise<main.ScanResponse>;
 
 export function SelectInputFile():Promise<string>;
+
+export function SelectOutputDirectory():Promise<string>;

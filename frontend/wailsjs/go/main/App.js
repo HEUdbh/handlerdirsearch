@@ -13,3 +13,7 @@ export function RunScan(arg1) {
 export function SelectInputFile() {
   return window['go']['main']['App']['SelectInputFile']();
 }
+
+export function SelectOutputDirectory() {
+  return window['go']['main']['App']['SelectOutputDirectory']();
+}

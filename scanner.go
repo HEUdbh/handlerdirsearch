@@ -21,8 +21,8 @@ const (
 )
 
 var (
-	status200Regex = regexp.MustCompile(`^\s*200\b`)
-	urlRegex       = regexp.MustCompile(`https?://[^\s"'<>]+`)
+	statusMatchRegex = regexp.MustCompile(`^\s*(200|301|403)\b`)
+	urlRegex         = regexp.MustCompile(`https?://[^\s"'<>]+`)
 )
 
 type indexedURL struct {
@@ -47,15 +47,15 @@ func parseInputFile(path string) ([]string, int, error) {
 
 	seen := make(map[string]struct{})
 	urls := make([]string, 0)
-	total200Lines := 0
+	totalMatchedLines := 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if !status200Regex.MatchString(line) {
+		if !statusMatchRegex.MatchString(line) {
 			continue
 		}
 
-		total200Lines++
+		totalMatchedLines++
 		matched := urlRegex.FindString(line)
 		if matched == "" {
 			continue
@@ -73,7 +73,7 @@ func parseInputFile(path string) ([]string, int, error) {
 		return nil, 0, fmt.Errorf("read input file: %w", err)
 	}
 
-	return urls, total200Lines, nil
+	return urls, totalMatchedLines, nil
 }
 
 func runScanWorkers(urls []string, request ScanRequest) []ScanRow {

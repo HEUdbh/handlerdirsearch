@@ -16,25 +16,32 @@ func TestParseInputFileDirsearchStyle(t *testing.T) {
 	content := strings.Join([]string{
 		"200 123B 0.001s http://example.com/a",
 		"301 123B 0.001s http://example.com/b",
+		"403 123B 0.001s https://example.org/blocked",
+		"404 123B 0.001s http://example.com/ignore",
 		"  200 88B 0.003s https://example.org/login?x=1",
-		"200 no-url-here",
-		"200 duplicate http://example.com/a",
+		"403 no-url-here",
+		"301 duplicate http://example.com/b",
 	}, "\n")
 
 	if err := os.WriteFile(inputPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write input file: %v", err)
 	}
 
-	urls, total200, err := parseInputFile(inputPath)
+	urls, totalMatched, err := parseInputFile(inputPath)
 	if err != nil {
 		t.Fatalf("parse input file: %v", err)
 	}
 
-	if total200 != 4 {
-		t.Fatalf("expected total200=4, got %d", total200)
+	if totalMatched != 6 {
+		t.Fatalf("expected total matched lines=6, got %d", totalMatched)
 	}
 
-	expected := []string{"http://example.com/a", "https://example.org/login?x=1"}
+	expected := []string{
+		"http://example.com/a",
+		"http://example.com/b",
+		"https://example.org/blocked",
+		"https://example.org/login?x=1",
+	}
 	if len(urls) != len(expected) {
 		t.Fatalf("expected %d urls, got %d: %#v", len(expected), len(urls), urls)
 	}

@@ -1,24 +1,33 @@
 ﻿<script setup>
 import { computed, reactive } from 'vue'
-import { RunScan, SelectInputFile } from '../wailsjs/go/main/App'
+import { RunScan, SelectInputFile, SelectOutputDirectory } from '../wailsjs/go/main/App'
 
-const form = reactive({
-  inputFilePath: '',
-  concurrency: 30,
-  timeoutSeconds: 5,
-  followRedirect: true,
-})
+function createDefaultForm() {
+  return {
+    inputFilePath: '',
+    outputDir: '',
+    concurrency: 30,
+    timeoutSeconds: 5,
+    followRedirect: true,
+    deleteSourceAfterRun: false,
+  }
+}
 
-const state = reactive({
-  running: false,
-  error: '',
-  reportPath: '',
-  total200Lines: 0,
-  totalUrls: 0,
-  succeeded: 0,
-  failed: 0,
-  rows: [],
-})
+function createDefaultState() {
+  return {
+    running: false,
+    error: '',
+    reportPath: '',
+    total200Lines: 0,
+    totalUrls: 0,
+    succeeded: 0,
+    failed: 0,
+    rows: [],
+  }
+}
+
+const form = reactive(createDefaultForm())
+const state = reactive(createDefaultState())
 
 const canStart = computed(() => !state.running && form.inputFilePath.trim() !== '')
 const hasRows = computed(() => state.rows.length > 0)
@@ -43,6 +52,15 @@ function formatComponents(components) {
   return components.join(', ')
 }
 
+function clearData() {
+  if (state.running) {
+    return
+  }
+
+  Object.assign(form, createDefaultForm())
+  Object.assign(state, createDefaultState())
+}
+
 async function browseFile() {
   state.error = ''
   try {
@@ -55,9 +73,28 @@ async function browseFile() {
   }
 }
 
+async function browseOutputDirectory() {
+  state.error = ''
+  try {
+    const dirPath = await SelectOutputDirectory()
+    if (dirPath) {
+      form.outputDir = dirPath
+    }
+  } catch (err) {
+    state.error = normalizeError(err)
+  }
+}
+
 async function startScan() {
   if (!canStart.value) {
     return
+  }
+
+  if (form.deleteSourceAfterRun) {
+    const confirmed = window.confirm('任务完成后将删除源文件，是否继续？')
+    if (!confirmed) {
+      return
+    }
   }
 
   state.running = true
@@ -66,9 +103,11 @@ async function startScan() {
   try {
     const response = await RunScan({
       inputFilePath: form.inputFilePath.trim(),
+      outputDir: form.outputDir.trim(),
       concurrency: Number(form.concurrency),
       timeoutSeconds: Number(form.timeoutSeconds),
       followRedirect: Boolean(form.followRedirect),
+      deleteSourceAfterRun: Boolean(form.deleteSourceAfterRun),
     })
 
     state.reportPath = response.reportPath || ''
@@ -89,7 +128,7 @@ async function startScan() {
   <main class="page">
     <section class="hero">
       <h1>URL 扫描报告生成器</h1>
-      <p>读取文本文件中的 200 状态行 URL，提取网页标题与组件信息，并生成 Markdown 报告。</p>
+      <p>读取文本文件中的 200/301/403 状态行 URL，提取网页标题与组件信息，并生成 Markdown 报告。</p>
     </section>
 
     <section class="layout">
@@ -110,6 +149,20 @@ async function startScan() {
           </div>
         </div>
 
+        <div class="row">
+          <label for="outputDir">输出目录（可选）</label>
+          <div class="inline">
+            <input
+              id="outputDir"
+              v-model="form.outputDir"
+              class="input"
+              type="text"
+              placeholder="不填则默认保存到输入文件所在目录"
+            />
+            <button class="btn btn-secondary" :disabled="state.running" @click="browseOutputDirectory">浏览目录</button>
+          </div>
+        </div>
+
         <div class="grid">
           <div class="row">
             <label for="concurrency">并发数</label>
@@ -125,11 +178,20 @@ async function startScan() {
               跟随重定向
             </label>
           </div>
+          <div class="row checkbox-row">
+            <label>
+              <input v-model="form.deleteSourceAfterRun" type="checkbox" />
+              执行后删除源文件
+            </label>
+          </div>
         </div>
 
         <div class="actions">
           <button class="btn btn-primary" :disabled="!canStart" @click="startScan">
             {{ state.running ? '扫描中...' : '开始扫描' }}
+          </button>
+          <button class="btn btn-secondary" :disabled="state.running" @click="clearData">
+            清空数据
           </button>
         </div>
 
@@ -140,7 +202,7 @@ async function startScan() {
         <h2>运行状态</h2>
         <p><strong>状态：</strong>{{ state.running ? '正在扫描' : '空闲' }}</p>
         <p><strong>报告路径：</strong>{{ state.reportPath || '尚未生成' }}</p>
-        <p><strong>命中 200 行：</strong>{{ state.total200Lines }}</p>
+        <p><strong>命中状态行（200/301/403）：</strong>{{ state.total200Lines }}</p>
         <p><strong>提取 URL：</strong>{{ state.totalUrls }}</p>
         <p><strong>成功：</strong>{{ state.succeeded }}</p>
         <p><strong>失败：</strong>{{ state.failed }}</p>
@@ -269,6 +331,8 @@ label {
 
 .actions {
   margin-top: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .btn {

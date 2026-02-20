@@ -42,6 +42,9 @@ func TestAppendMarkdownReportAppendsSectionsAndEscapesCells(t *testing.T) {
 	if strings.Count(content, "## Scan Report - ") != 2 {
 		t.Fatalf("expected 2 report sections, got content: %s", content)
 	}
+	if !strings.Contains(content, "Total Matched Lines (200/301/403): 1") {
+		t.Fatalf("expected matched-line summary in report: %s", content)
+	}
 
 	if !strings.Contains(content, "https://example.com/a\\|b") {
 		t.Fatalf("expected escaped URL pipe in report: %s", content)

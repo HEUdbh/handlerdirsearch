@@ -18,7 +18,7 @@ func appendMarkdownReport(reportPath, inputFilePath string, response ScanRespons
 	builder := strings.Builder{}
 	builder.WriteString(fmt.Sprintf("## Scan Report - %s\n", now))
 	builder.WriteString(fmt.Sprintf("- Input File: `%s`\n", inputFilePath))
-	builder.WriteString(fmt.Sprintf("- Total 200 Lines: %d\n", response.Total200Lines))
+	builder.WriteString(fmt.Sprintf("- Total Matched Lines (200/301/403): %d\n", response.Total200Lines))
 	builder.WriteString(fmt.Sprintf("- Total URLs: %d\n", response.TotalURLs))
 	builder.WriteString(fmt.Sprintf("- Succeeded: %d\n", response.Succeeded))
 	builder.WriteString(fmt.Sprintf("- Failed: %d\n\n", response.Failed))
@@ -26,7 +26,7 @@ func appendMarkdownReport(reportPath, inputFilePath string, response ScanRespons
 	builder.WriteString("| --- | --- | --- | --- |\n")
 
 	if len(response.Rows) == 0 {
-		builder.WriteString("| N/A | N/A | N/A | No URL found from 200 lines |\n\n")
+		builder.WriteString("| N/A | N/A | N/A | No URL found from matched lines (200/301/403) |\n\n")
 	} else {
 		for _, row := range response.Rows {
 			components := "N/A"

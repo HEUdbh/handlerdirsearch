@@ -2,9 +2,11 @@ export namespace main {
 	
 	export class ScanRequest {
 	    inputFilePath: string;
+	    outputDir: string;
 	    concurrency: number;
 	    timeoutSeconds: number;
 	    followRedirect: boolean;
+	    deleteSourceAfterRun: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ScanRequest(source);
@@ -13,9 +15,11 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.inputFilePath = source["inputFilePath"];
+	        this.outputDir = source["outputDir"];
 	        this.concurrency = source["concurrency"];
 	        this.timeoutSeconds = source["timeoutSeconds"];
 	        this.followRedirect = source["followRedirect"];
+	        this.deleteSourceAfterRun = source["deleteSourceAfterRun"];
 	    }
 	}
 	export class ScanRow {
